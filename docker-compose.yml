@@ -1,0 +1,47 @@
+services:
+  glimmer-frontend:
+    image: nginx
+    container_name: glimmer-frontend
+    volumes:
+      - ./homepage:/usr/share/nginx/homepage:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./recruit:/usr/share/nginx/recruit:ro
+      - ./submit:/usr/share/nginx/submit:ro
+    depends_on:
+      - glimmer-backend
+    networks:
+      - docker-net
+    restart: unless-stopped
+  
+  glimmer-backend:
+    image: openjdk:17
+    container_name: glimmer-backend
+    working_dir: /app
+    volumes:
+      - ./backend:/app   # 你后端 jar 包和配置文件放在这里
+    command: ["java", "-jar", "recruitment.jar"]
+    depends_on:
+      - glimmer-mysql
+    networks:
+      - docker-net
+    restart: unless-stopped
+
+  glimmer-mysql:
+    image: mysql
+    container_name: glimmer-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: recruitment        # 初始化数据库名
+      MYSQL_USER: glimmeruser       # 普通用户
+      MYSQL_PASSWORD: glimmerpassword        # 普通用户密码
+    volumes:
+      - ./backend/mysql_data:/var/lib/mysql  # 数据持久化目录
+      - ./backend/init:/docker-entrypoint-initdb.d
+    networks:
+      - docker-net
+    restart: unless-stopped
+
+networks:
+  docker-net:
+    external: true
+    name: docker-net
